@@ -1,0 +1,7 @@
+D:\Dropbox\schule\E1\lernsituationen\02-renamer\projektRenamer\vorstellung\Eingabe\bin\Debug\Eingabe.exe.config
+D:\Dropbox\schule\E1\lernsituationen\02-renamer\projektRenamer\vorstellung\Eingabe\bin\Debug\Eingabe.exe
+D:\Dropbox\schule\E1\lernsituationen\02-renamer\projektRenamer\vorstellung\Eingabe\bin\Debug\Eingabe.pdb
+D:\Dropbox\schule\E1\lernsituationen\02-renamer\projektRenamer\vorstellung\Eingabe\obj\Debug\Eingabe.csproj.AssemblyReference.cache
+D:\Dropbox\schule\E1\lernsituationen\02-renamer\projektRenamer\vorstellung\Eingabe\obj\Debug\Eingabe.csproj.CoreCompileInputs.cache
+D:\Dropbox\schule\E1\lernsituationen\02-renamer\projektRenamer\vorstellung\Eingabe\obj\Debug\Eingabe.exe
+D:\Dropbox\schule\E1\lernsituationen\02-renamer\projektRenamer\vorstellung\Eingabe\obj\Debug\Eingabe.pdb
