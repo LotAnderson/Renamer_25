@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "MDG4ZYpU35I=",
+  "dgSpecHash": "KNTHS+FeWcA=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Microsoft\\source\\repos\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
+  "projectFilePath": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Microsoft\\.nuget\\packages\\microsoft.net.sdk.compilers.toolset\\9.0.302\\microsoft.net.sdk.compilers.toolset.9.0.302.nupkg.sha512",
     "C:\\Users\\Microsoft\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.18\\microsoft.windowsdesktop.app.ref.8.0.18.nupkg.sha512",

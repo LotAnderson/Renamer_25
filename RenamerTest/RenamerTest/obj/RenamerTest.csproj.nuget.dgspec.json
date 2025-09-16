@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Microsoft\\source\\repos\\RenamerTest\\RenamerTest\\RenamerTest.csproj": {}
+    "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\RenamerTest.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Microsoft\\source\\repos\\RenamerTest\\RenamerTest\\RenamerTest.csproj": {
+    "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\RenamerTest.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Microsoft\\source\\repos\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
+        "projectUniqueName": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
         "projectName": "RenamerTest",
-        "projectPath": "C:\\Users\\Microsoft\\source\\repos\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
+        "projectPath": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
         "packagesPath": "C:\\Users\\Microsoft\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Microsoft\\source\\repos\\RenamerTest\\RenamerTest\\obj\\",
+        "outputPath": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
