@@ -68,7 +68,23 @@ namespace RenamerTest
 
             //TODO : Hier Dateiüberblick
 
+            // 2) Get all .png and .jpg files
+            imageFiles = Directory.GetFiles(directoryPath, "*.png")
+                .Concat(Directory.GetFiles(directoryPath, "*.jpg"))
+                .ToArray();
 
+            // 3) Output to console
+            Console.WriteLine("Alle .png und .jpg Dateien im aktuellen Verzeichnis:");
+            foreach (string file in imageFiles)
+            {
+                string fileName = Path.GetFileName(file);
+                Console.WriteLine(fileName);
+
+                // Output parsed version
+                string[,] result = ParseFilename(fileName);
+                for (int i = 0; i < result.GetLength(0); i++)
+                    Console.WriteLine($"    {result[i, 0]} => {result[i, 1]}");
+            }
             // Eingabe des Präfixes
             Console.Write("Geben Sie das Präfix ein, das geändert oder entfernt werden soll (Leer lassen, um nichts zu ändern): ");
             string prefix = Console.ReadLine();
@@ -90,49 +106,77 @@ namespace RenamerTest
 
             string[] files = Directory.GetFiles(directoryPath);
 
+            //foreach (string file in files)
+            //{
+            //    string fileName = Path.GetFileName(file);
+
+            //    string[,] result = ParseFilename(fileName);
+
+            //    // Ausgabe
+            //    for (int i = 0; i < result.GetLength(0); i++)
+            //        Console.WriteLine($"{result[i, 0]} => {result[i, 1]}");
+            //    string fileExtension = Path.GetExtension(file);
+            //    string baseName = Path.GetFileNameWithoutExtension(file);
+
+            //    // Falls Präfix entfernt oder geändert werden soll
+            //    if (!string.IsNullOrEmpty(prefix) && baseName.StartsWith(prefix))
+            //    {
+            //        baseName = baseName.Substring(prefix.Length); // Präfix entfernen
+            //    }
+
+            //    // Falls Suffix entfernt oder geändert werden soll
+            //    if (!string.IsNullOrEmpty(suffix) && baseName.EndsWith(suffix))
+            //    {
+            //        baseName = baseName.Substring(0, baseName.Length - suffix.Length); // Suffix entfernen
+            //    }
+
+            //    //Microsoft           
+            //    //// Führende Nullen hinzufügen oder entfernen
+            //    //if (leadingZerosOption == "add")
+            //    //{
+            //    //    baseName = AddLeadingZeros(baseName);
+            //    //}
+            //    //else if (leadingZerosOption == "remove")
+            //    //{
+            //    //    baseName = RemoveLeadingZeros(baseName);
+            //    //}
+
+            //    // Neuer Name mit der ursprünglichen Dateiendung
+            //    string newFileName = Path.Combine(directoryPath, baseName + fileExtension);
+
+            //    // Umbenennen
+            //    if (file != newFileName)
+            //    {
+            //        File.Move(file, newFileName);
+            //        Console.WriteLine($"Datei umbenannt: {fileName} -> {baseName + fileExtension}");
+            //    }
+            //}
+            Console.WriteLine("Folgende Änderungen werden vorgenommen:");
             foreach (string file in files)
             {
                 string fileName = Path.GetFileName(file);
-                string[,] result = ParseFilename(fileName);
-
-                // Ausgabe
-                for (int i = 0; i < result.GetLength(0); i++)
-                    Console.WriteLine($"{result[i, 0]} => {result[i, 1]}");
                 string fileExtension = Path.GetExtension(file);
                 string baseName = Path.GetFileNameWithoutExtension(file);
 
-                // Falls Präfix entfernt oder geändert werden soll
                 if (!string.IsNullOrEmpty(prefix) && baseName.StartsWith(prefix))
-                {
-                    baseName = baseName.Substring(prefix.Length); // Präfix entfernen
-                }
+                    baseName = baseName.Substring(prefix.Length);
 
-                // Falls Suffix entfernt oder geändert werden soll
                 if (!string.IsNullOrEmpty(suffix) && baseName.EndsWith(suffix))
-                {
-                    baseName = baseName.Substring(0, baseName.Length - suffix.Length); // Suffix entfernen
-                }
+                    baseName = baseName.Substring(0, baseName.Length - suffix.Length);
 
-                //Microsoft           
-                //// Führende Nullen hinzufügen oder entfernen
-                //if (leadingZerosOption == "add")
-                //{
-                //    baseName = AddLeadingZeros(baseName);
-                //}
-                //else if (leadingZerosOption == "remove")
-                //{
-                //    baseName = RemoveLeadingZeros(baseName);
-                //}
+                string newFileName = baseName + fileExtension;
 
-                // Neuer Name mit der ursprünglichen Dateiendung
-                string newFileName = Path.Combine(directoryPath, baseName + fileExtension);
+                if (fileName != newFileName)
+                    Console.WriteLine($"{fileName} -> {newFileName}");
+            }
 
-                // Umbenennen
-                if (file != newFileName)
-                {
-                    File.Move(file, newFileName);
-                    Console.WriteLine($"Datei umbenannt: {fileName} -> {baseName + fileExtension}");
-                }
+            // Bestätigungsabfrage
+            Console.Write("Wollen Sie wirklich fortfahren? (j/n): ");
+            string confirm = Console.ReadLine()?.Trim().ToLower();
+            if (confirm != "j")
+            {
+                Console.WriteLine("Vorgang abgebrochen.");
+                return;
             }
 
             Console.WriteLine("Vorgang abgeschlossen.");
