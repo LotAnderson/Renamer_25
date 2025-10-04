@@ -1,9 +1,8 @@
-﻿using System.Text.RegularExpressions;
-using System.Linq; // Add at the top if not present
-
-using System;
+﻿using System;
 using System.IO;
-
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace RenamerTest
 {
@@ -12,267 +11,265 @@ namespace RenamerTest
         static void Main(string[] args)
         {
             Console.WriteLine("Willkommen beim erweiterten File Renamer!");
-
-            // Simulated button with colored background
             Console.BackgroundColor = ConsoleColor.Red;
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write(" [ Programm Stop ] ");
             Console.ResetColor();
-            Console.WriteLine(" Tippen Sie 'stop' und drücken Sie Enter, um das Programm zu beenden.");
+            Console.WriteLine(" Tippen Sie 'stop' (jederzeit) zum Beenden oder 'reset' zum Neustart.");
             Console.WriteLine();
-            // 1) Get current directory
-            string currentDirectory = Directory.GetCurrentDirectory();
 
-            // 2) Get all .png and .jpg files
-            string[] imageFiles = Directory.GetFiles(currentDirectory, "*.png")
-                .Concat(Directory.GetFiles(currentDirectory, "*.jpg"))
-                .ToArray();
+        // ---- Get and validate directory + collect files in a single loop ----
+        SelectDirectory:
+            string directoryPath;
+            string[] files;
 
-            // 3) Output to console
-            Console.WriteLine("Alle .png und .jpg Dateien im aktuellen Verzeichnis:");
-            foreach (string file in imageFiles)
-            {
-                string fileName = Path.GetFileName(file);
-                Console.WriteLine(fileName);
-
-                // Output parsed version
-                string[,] result = ParseFilename(fileName);
-                for (int i = 0; i < result.GetLength(0); i++)
-                    Console.WriteLine($"    {result[i, 0]} => {result[i, 1]}");
-            }
-
-            string directoryPath = "";
             while (true)
             {
-                directoryPath = ReadInputOrResetOrStop("Geben Sie den vollständigen Pfad des Verzeichnisses ein ('reset' zum Neustart): ");
+                directoryPath = ReadInput("Geben Sie den vollständigen Pfad des Verzeichnisses ein: ");
+                if (directoryPath == "__reset__") continue;
 
-                // Reset process if user types 'reset'
-                if (directoryPath == "__reset__")
-                    continue;
-
-                // Validate directory
-                while (!Directory.Exists(directoryPath))
+                if (!Directory.Exists(directoryPath))
                 {
                     Console.WriteLine("Das angegebene Verzeichnis existiert nicht.");
-                    directoryPath = ReadInputOrResetOrStop("Bitte geben Sie einen gültigen Verzeichnispfad ein ('reset' zum Neustart): ");
-                    if (directoryPath == "__reset__")
-                        break;
-                }
-                if (directoryPath == "__reset__")
                     continue;
+                }
 
-                // ... rest of your process (prefix, suffix, file renaming, etc.)
+                if (PathSafety.IsDangerousPath(directoryPath))
+                {
+                    Console.WriteLine("⚠ Der gewählte Pfad ist zu allgemein/gefährlich...");
+                    continue;
+                }
 
-                break; // Exit loop after successful process
+                break; // valid + safe
             }
 
-            //TODO : Hier Dateiüberblick
+        StartInSameDirectory:
+            files = Directory.EnumerateFiles(directoryPath, "*", SearchOption.TopDirectoryOnly)
+                             .Where(p => p.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                                      || p.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                                      || p.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                             .ToArray();
 
-            // 2) Get all .png and .jpg files
-            imageFiles = Directory.GetFiles(directoryPath, "*.png")
-                .Concat(Directory.GetFiles(directoryPath, "*.jpg"))
-                .ToArray();
-
-            // 3) Output to console
-            Console.WriteLine("Alle .png und .jpg Dateien im aktuellen Verzeichnis:");
-            foreach (string file in imageFiles)
+            if (files.Length == 0)
             {
-                string fileName = Path.GetFileName(file);
-                Console.WriteLine(fileName);
-
-                // Output parsed version
-                string[,] result = ParseFilename(fileName);
-                for (int i = 0; i < result.GetLength(0); i++)
-                    Console.WriteLine($"    {result[i, 0]} => {result[i, 1]}");
+                Console.WriteLine("Keine .png/.jpg/.jpeg Dateien im Verzeichnis gefunden.");
+                goto SelectDirectory;
             }
-            // Eingabe des Präfixes
-            Console.Write("Geben Sie das Präfix ein, das geändert oder entfernt werden soll (Leer lassen, um nichts zu ändern): ");
-            string prefix = Console.ReadLine();
 
-            // Eingabe des Suffixes
-            Console.Write("Geben Sie das Suffix ein, das geändert oder entfernt werden soll (Leer lassen, um nichts zu ändern): ");
-            string suffix = Console.ReadLine();
+            // ---- Overview with parsed parts ---------------------------------
+            Console.WriteLine("Gefundene Bilddateien:");
+            foreach (var f in files)
+            {
+                var fn = Path.GetFileName(f);
+                Console.WriteLine(fn);
+                var parsed = FilenameParser.ParseFilename(fn ,true);
+            }
+            Console.WriteLine();
 
-            //Mittelstufe
-            // Eingabe der Option für führende Nullen (addieren oder entfernen)
-            //Console.Write("Möchten Sie führende Nullen hinzufügen oder entfernen? (add/remove): ");
-            //string leadingZerosOption = Console.ReadLine().ToLower();
+            // ---- Collect ONLY prefix rule ------------------------------------
+            string prefix = "";
+            string prefixReplacement = "";
+            var pre = PromptFindReplace("Präfix");
+            if (pre.restart) goto SelectDirectory;
+            prefix = pre.pattern ?? "";
+            prefixReplacement = pre.replacement ?? "";
+            var prefix_parsed = FilenameParser.ParseFilename(prefix,true);
+            var prefix_replacement_parsed = FilenameParser.ParseFilename(prefixReplacement, true);
+            FilenameParser.Find_difference(prefix , prefixReplacement);
 
-            //if (leadingZerosOption != "add" && leadingZerosOption != "remove")
-            //{
-            //    Console.WriteLine("Ungültige Option! Bitte 'add' oder 'remove' wählen.");
-            //    return;
-            //}
+            // ---- Preview changes ---------------------------------------------
+            Console.WriteLine();
+            Console.WriteLine("Vorschau der Änderungen:");
+            int changes = 0;
+            var planned = new List<(string oldPath, string newPath)>(files.Length);
 
-            string[] files = Directory.GetFiles(directoryPath);
-
-            //foreach (string file in files)
-            //{
-            //    string fileName = Path.GetFileName(file);
-
-            //    string[,] result = ParseFilename(fileName);
-
-            //    // Ausgabe
-            //    for (int i = 0; i < result.GetLength(0); i++)
-            //        Console.WriteLine($"{result[i, 0]} => {result[i, 1]}");
-            //    string fileExtension = Path.GetExtension(file);
-            //    string baseName = Path.GetFileNameWithoutExtension(file);
-
-            //    // Falls Präfix entfernt oder geändert werden soll
-            //    if (!string.IsNullOrEmpty(prefix) && baseName.StartsWith(prefix))
-            //    {
-            //        baseName = baseName.Substring(prefix.Length); // Präfix entfernen
-            //    }
-
-            //    // Falls Suffix entfernt oder geändert werden soll
-            //    if (!string.IsNullOrEmpty(suffix) && baseName.EndsWith(suffix))
-            //    {
-            //        baseName = baseName.Substring(0, baseName.Length - suffix.Length); // Suffix entfernen
-            //    }
-
-            //    //Microsoft           
-            //    //// Führende Nullen hinzufügen oder entfernen
-            //    //if (leadingZerosOption == "add")
-            //    //{
-            //    //    baseName = AddLeadingZeros(baseName);
-            //    //}
-            //    //else if (leadingZerosOption == "remove")
-            //    //{
-            //    //    baseName = RemoveLeadingZeros(baseName);
-            //    //}
-
-            //    // Neuer Name mit der ursprünglichen Dateiendung
-            //    string newFileName = Path.Combine(directoryPath, baseName + fileExtension);
-
-            //    // Umbenennen
-            //    if (file != newFileName)
-            //    {
-            //        File.Move(file, newFileName);
-            //        Console.WriteLine($"Datei umbenannt: {fileName} -> {baseName + fileExtension}");
-            //    }
-            //}
-            Console.WriteLine("Folgende Änderungen werden vorgenommen:");
             foreach (string file in files)
             {
                 string fileName = Path.GetFileName(file);
-                string fileExtension = Path.GetExtension(file);
+                string ext = Path.GetExtension(file);
                 string baseName = Path.GetFileNameWithoutExtension(file);
 
-                if (!string.IsNullOrEmpty(prefix) && baseName.StartsWith(prefix))
-                    baseName = baseName.Substring(prefix.Length);
+                // apply only prefix change
+                baseName = ApplyPrefixOnly(baseName, prefix, prefixReplacement);
+                // Optional: baseName = RemoveLeadingZeros(baseName);
 
-                if (!string.IsNullOrEmpty(suffix) && baseName.EndsWith(suffix))
-                    baseName = baseName.Substring(0, baseName.Length - suffix.Length);
+                string targetPath = Path.Combine(directoryPath, baseName + ext);
 
-                string newFileName = baseName + fileExtension;
-
-                if (fileName != newFileName)
-                    Console.WriteLine($"{fileName} -> {newFileName}");
+                if (!string.Equals(file, targetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine($"{fileName} -> {Path.GetFileName(targetPath)}");
+                    changes++;
+                    planned.Add((file, targetPath));
+                }
             }
 
-            // Bestätigungsabfrage
-            Console.Write("Wollen Sie wirklich fortfahren? (j/n): ");
-            string confirm = Console.ReadLine()?.Trim().ToLower();
-            if (confirm != "j")
+            if (changes == 0)
+            {
+                Console.WriteLine("Es gibt keine Änderungen vorzunehmen.");
+            }
+
+            // ---- Confirm and perform -----------------------------------------
+            bool proceed = ReadYesNo("Wollen Sie wirklich fortfahren? (j/n): ");
+            if (proceed && planned.Count > 0)
+            {
+                int renamed = 0, skipped = 0, failed = 0;
+
+                foreach (var (oldPath, newPath) in planned)
+                {
+                    try
+                    {
+                        if (string.Equals(oldPath, newPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            skipped++;
+                            continue;
+                        }
+
+                        if (File.Exists(newPath))
+                        {
+                            Console.WriteLine($"Übersprungen (Ziel existiert bereits): {Path.GetFileName(oldPath)}");
+                            skipped++;
+                            continue;
+                        }
+
+                        File.Move(oldPath, newPath);
+                        Console.WriteLine($"Umbenannt: {Path.GetFileName(oldPath)} -> {Path.GetFileName(newPath)}");
+                        renamed++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Fehler bei {Path.GetFileName(oldPath)}: {ex.Message}");
+                        failed++;
+                    }
+                }
+
+                Console.WriteLine();
+                Console.WriteLine($"Fertig. Umbenannt: {renamed}, Übersprungen: {skipped}, Fehler: {failed}");
+
+                // Refresh file list after action
+                files = Directory.EnumerateFiles(directoryPath, "*", SearchOption.TopDirectoryOnly)
+                                 .Where(p => p.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                                          || p.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                                          || p.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                                 .ToArray();
+            }
+            else if (!proceed)
             {
                 Console.WriteLine("Vorgang abgebrochen.");
-                return;
             }
 
-            Console.WriteLine("Vorgang abgeschlossen.");
-        }
-
-        //Mittelstufe
-        // Funktion, um führende Nullen hinzuzufügen
-        //static string AddLeadingZeros(string name)
-        //{
-        //    return name.PadLeft(4, '0'); // Hier wird auf 4 Ziffern erweitert (Anpassbar)
-        //}
-
-        // Funktion, um führende Nullen zu entfernen
-        static string RemoveLeadingZeros(string name)
-        {
-            return Regex.Replace(name, @"^0+", "");
-        }
-        static string[,] ParseFilename(string filename)
-        {
-            string extension = Path.GetExtension(filename);                  // e.g., ".jpg"
-            string nameWithoutExt = Path.GetFileNameWithoutExtension(filename); // e.g., "0Bild_001012_f"
-
-            var parts = new List<(string, string)>();
-            int i = 0;
-
-            while (i < nameWithoutExt.Length)
+            // ---- Single, clean menu ------------------------------------------
+            while (true)
             {
-                if (char.IsDigit(nameWithoutExt[i]))
+                Console.WriteLine();
+                Console.WriteLine("Was möchten Sie tun?");
+                Console.WriteLine("[1] Weitermachen im selben Ordner");
+                Console.WriteLine("[2] Reset (neues Verzeichnis wählen)");
+                Console.WriteLine("[3] Stop");
+                var choice = ReadInput("Auswahl (1/2/3): ");
+                if (choice == "__reset__") { Console.WriteLine(); goto SelectDirectory; }
+                choice = (choice ?? "").Trim().ToLowerInvariant();
+
+                if (choice == "1")
                 {
-                    // Collect digit block
-                    int start = i;
-                    while (i < nameWithoutExt.Length && char.IsDigit(nameWithoutExt[i]))
-                        i++;
-                    string numberBlock = nameWithoutExt.Substring(start, i - start);
-
-                    // Leading zeros separately
-                    int zeroCount = 0;
-                    while (zeroCount < numberBlock.Length && numberBlock[zeroCount] == '0')
-                        zeroCount++;
-
-                    if (zeroCount > 0)
-                        parts.Add((new string('0', zeroCount), "0 vor Nummer"));
-                    if (zeroCount < numberBlock.Length)
-                        parts.Add((numberBlock.Substring(zeroCount), "num"));
+                    if (files.Length == 0)
+                    {
+                        Console.WriteLine("In diesem Ordner sind keine passenden Dateien mehr vorhanden.");
+                        goto SelectDirectory;
+                    }
+                    Console.WriteLine();
+                    goto StartInSameDirectory;
+                }
+                else if (choice == "2")
+                {
+                    Console.WriteLine();
+                    goto SelectDirectory;
+                }
+                else if (choice == "3" || choice == "stop")
+                {
+                    Console.WriteLine("Programm wurde gestoppt.");
+                    Environment.Exit(0);
                 }
                 else
                 {
-                    // Collect letters/symbols
-                    int start = i;
-                    while (i < nameWithoutExt.Length && !char.IsDigit(nameWithoutExt[i]))
-                        i++;
-                    string textBlock = nameWithoutExt.Substring(start, i - start);
-                    parts.Add((textBlock, "str"));
+                    Console.WriteLine("Bitte 1, 2 oder 3 eingeben (oder 'reset'/'stop').");
+                    continue;
                 }
             }
-
-            // Add extension
-            parts.Add((extension, "format"));
-
-            // Convert to 2D array
-            string[,] result = new string[parts.Count, 2];
-            for (int j = 0; j < parts.Count; j++)
-            {
-                result[j, 0] = parts[j].Item1;
-                result[j, 1] = parts[j].Item2;
-            }
-
-            return result;
         }
-        static string ReadInputOrStop(string prompt)
+
+        // ---------- Helpers ---------------------------------------------------
+
+        // Only prefix modification
+        static string ApplyPrefixOnly(string baseName, string prefix, string prefixReplacement)
+        {
+            if (!string.IsNullOrEmpty(prefix) && baseName.StartsWith(prefix))
+                return (prefixReplacement ?? string.Empty) + baseName.Substring(prefix.Length);
+            return baseName;
+        }
+
+        static string ReadInput(string prompt)
         {
             Console.Write(prompt);
-            string input = Console.ReadLine();
-            if (input?.Trim().ToLower() == "stop")
+            string raw = Console.ReadLine() ?? "";
+            string trimmedLower = raw.Trim().ToLowerInvariant();
+
+            if (trimmedLower == "stop")
             {
                 Console.WriteLine("Programm wurde gestoppt.");
                 Environment.Exit(0);
             }
-            return input;
-        }
-        static string ReadInputOrResetOrStop(string prompt)
-        {
-            Console.Write(prompt);
-            string input = Console.ReadLine();
-            if (input?.Trim().ToLower() == "stop")
-            {
-                Console.WriteLine("Programm wurde gestoppt.");
-                Environment.Exit(0);
-            }
-            if (input?.Trim().ToLower() == "reset")
+            if (trimmedLower == "reset")
             {
                 Console.WriteLine("Prozess wird neu gestartet...");
                 return "__reset__";
             }
-            return input;
+            return raw.Trim();
+        }
+
+        static string ReadInputRaw(string prompt)
+        {
+            Console.Write(prompt);
+            string raw = Console.ReadLine() ?? "";
+            string trimmedLower = raw.Trim().ToLowerInvariant();
+
+            if (trimmedLower == "stop")
+            {
+                Console.WriteLine("Programm wurde gestoppt.");
+                Environment.Exit(0);
+            }
+            if (trimmedLower == "reset")
+            {
+                Console.WriteLine("Prozess wird neu gestartet...");
+                return "__reset__";
+            }
+            return raw; // preserve exact text
+        }
+
+        static bool ReadYesNo(string prompt)
+        {
+            while (true)
+            {
+                var ans = ReadInput(prompt);
+                if (ans == "__reset__") continue;
+                ans = ans.Trim().ToLowerInvariant();
+                if (ans == "j" || ans == "ja" || ans == "y" || ans == "yes") return true;
+                if (ans == "n" || ans == "nein" || ans == "no") return false;
+                Console.WriteLine("Bitte 'j' oder 'n' eingeben (oder 'reset'/'stop').");
+            }
+        }
+
+        private static (bool restart, string pattern, string replacement) PromptFindReplace(string label)
+        {
+            string pattern = ReadInputRaw($"{label} zum Entfernen/Ändern (leer lassen = kein {label}): ");
+            if (pattern == "__reset__") return (true, null, null);
+
+            string replacement = "";
+            if (!string.IsNullOrEmpty(pattern))
+            {
+                replacement = ReadInputRaw($"Neues {label} (leer lassen = {label} entfernen): ");
+                if (replacement == "__reset__") return (true, null, null);
+            }
+            return (false, pattern, replacement);
         }
     }
-
 }
