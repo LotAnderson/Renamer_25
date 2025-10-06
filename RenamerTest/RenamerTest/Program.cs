@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
+
 namespace RenamerTest
 {
     class Program
@@ -75,25 +76,21 @@ namespace RenamerTest
             prefixReplacement = pre.replacement ?? "";
             var prefix_parsed = FilenameParser.ParseFilename(prefix,true);
             var prefix_replacement_parsed = FilenameParser.ParseFilename(prefixReplacement, true);
-            FilenameParser.Find_difference(prefix , prefixReplacement);
 
             // ---- Preview changes ---------------------------------------------
             Console.WriteLine();
             Console.WriteLine("Vorschau der Änderungen:");
             int changes = 0;
             var planned = new List<(string oldPath, string newPath)>(files.Length);
-
             foreach (string file in files)
             {
                 string fileName = Path.GetFileName(file);
                 string ext = Path.GetExtension(file);
                 string baseName = Path.GetFileNameWithoutExtension(file);
 
-                // apply only prefix change
-                baseName = ApplyPrefixOnly(baseName, prefix, prefixReplacement);
-                // Optional: baseName = RemoveLeadingZeros(baseName);
-
-                string targetPath = Path.Combine(directoryPath, baseName + ext);
+                var (code, suggestedBase, diffLog) = FilenameParser.Find_difference(baseName, prefix, prefixReplacement);
+                if (code == 2) continue; // block non-numeric changes
+                string targetPath = Path.Combine(directoryPath, suggestedBase + ext);
 
                 if (!string.Equals(file, targetPath, StringComparison.OrdinalIgnoreCase))
                 {
@@ -102,6 +99,7 @@ namespace RenamerTest
                     planned.Add((file, targetPath));
                 }
             }
+
 
             if (changes == 0)
             {

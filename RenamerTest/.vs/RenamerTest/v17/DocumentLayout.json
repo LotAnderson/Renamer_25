@@ -1,18 +1,14 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\",
+  "WorkspaceRootPath": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|c:\\users\\microsoft\\source\\repos\\renamer_25\\renamertest\\renamertest\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|solutionrelative:renamertest\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|c:\\users\\microsoft\\source\\repos\\renamer_25\\renamertest\\renamertest\\class2.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|c:\\users\\edhar\\source\\repos\\lotanderson\\renamer_25\\renamertest\\renamertest\\class2.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|solutionrelative:renamertest\\class2.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|c:\\users\\microsoft\\source\\repos\\renamer_25\\renamertest\\renamertest\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|solutionrelative:renamertest\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|c:\\users\\edhar\\source\\repos\\lotanderson\\renamer_25\\renamertest\\renamertest\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{88983910-EF47-47FF-873A-5CCFAAECB41E}|RenamerTest\\RenamerTest.csproj|solutionrelative:renamertest\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,46 +18,44 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 3,
           "Children": [
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
+            },
+            {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "Class2.cs",
-              "DocumentMoniker": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\Class2.cs",
+              "DocumentMoniker": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\Class2.cs",
               "RelativeDocumentMoniker": "RenamerTest\\Class2.cs",
-              "ToolTip": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\Class2.cs",
+              "ToolTip": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\Class2.cs",
               "RelativeToolTip": "RenamerTest\\Class2.cs",
-              "ViewState": "AgIAAAkAAAAAAAAAAAAAAAgAAAAVAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAD8AAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-30T12:11:49.376Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Class1.cs",
-              "DocumentMoniker": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\Class1.cs",
-              "RelativeDocumentMoniker": "RenamerTest\\Class1.cs",
-              "ToolTip": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\Class1.cs",
-              "RelativeToolTip": "RenamerTest\\Class1.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAkAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-30T12:07:39.447Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\Program.cs",
+              "DocumentMoniker": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\Program.cs",
               "RelativeDocumentMoniker": "RenamerTest\\Program.cs",
-              "ToolTip": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\Program.cs",
+              "ToolTip": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\Program.cs",
               "RelativeToolTip": "RenamerTest\\Program.cs",
-              "ViewState": "AgIAAL4AAAAAAAAAAAAQwMMAAAARAAAAAAAAAA==",
+              "ViewState": "AgIAAPYAAAAAAAAAAAAqwF0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-16T07:01:47.125Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-09-16T07:01:47.125Z"
             }
           ]
         }
