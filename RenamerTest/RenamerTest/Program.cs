@@ -70,35 +70,45 @@ namespace RenamerTest
             // ---- Collect ONLY prefix rule ------------------------------------
             string prefix = "";
             string prefixReplacement = "";
-            var pre = PromptFindReplace("Präfix");
+            var pre = PromptFindReplace("Dateiname/Teil des Namens (Wildcards erlaubt)");
             if (pre.restart) goto SelectDirectory;
             prefix = pre.pattern ?? "";
             prefixReplacement = pre.replacement ?? "";
             var prefix_parsed = FilenameParser.ParseFilename(prefix,true);
             var prefix_replacement_parsed = FilenameParser.ParseFilename(prefixReplacement, true);
+            // Optional: filter files by extension mentioned in the pattern
+            string? extFilter = Path.GetExtension(prefix);
+            if (!string.IsNullOrEmpty(extFilter))
+            {
+                files = files.Where(p => Path.GetExtension(p)
+                             .Equals(extFilter, StringComparison.OrdinalIgnoreCase))
+                             .ToArray();
+                Console.WriteLine($"Dateien werden nach Erweiterung '{extFilter}' gefiltert.");
+            }
 
             // ---- Preview changes ---------------------------------------------
             Console.WriteLine();
             Console.WriteLine("Vorschau der Änderungen:");
             int changes = 0;
             var planned = new List<(string oldPath, string newPath)>(files.Length);
+
             foreach (string file in files)
             {
                 string fileName = Path.GetFileName(file);
                 string ext = Path.GetExtension(file);
                 string baseName = Path.GetFileNameWithoutExtension(file);
 
-                // NEW: ask Find_difference to classify + produce suggested base name
-                var (code, suggestedBase, diffLog) = FilenameParser.Find_difference(baseName, prefix, prefixReplacement);
+                // If pattern or replacement mentions an extension, match on FULL name
+                bool matchOnFull = PatternMentionsExtension(prefix) || PatternMentionsExtension(prefixReplacement);
+                string subject = matchOnFull ? fileName : baseName;
 
-                // Optional debug:
-                // foreach (var l in diffLog) Console.WriteLine(l);
+                // classify + get suggested name for the chosen subject
+                var (code, suggested, diffLog) = FilenameParser.Find_difference(subject, prefix, prefixReplacement);
+                if (code == 2) continue; // block only when non-numeric/structural outside wildcards
 
-                // Skip only if code == 2 (non-numeric/structural diff outside allowed pattern)
-                if (code == 2)
-                    continue;
-
-                string targetPath = Path.Combine(directoryPath, suggestedBase + ext);
+                // If suggestion already contains extension, use it as-is; otherwise add the original ext
+                string targetFileName = SuggestedHasExtension(suggested) ? suggested : suggested + ext;
+                string targetPath = Path.Combine(directoryPath, targetFileName);
 
                 if (!string.Equals(file, targetPath, StringComparison.OrdinalIgnoreCase))
                 {
@@ -307,5 +317,8 @@ namespace RenamerTest
             }
             return (false, pattern, replacement);
         }
+        static bool PatternMentionsExtension(string? s) => !string.IsNullOrEmpty(s) && s.IndexOf('.') >= 0;
+        static bool SuggestedHasExtension(string? s) => !string.IsNullOrEmpty(s) && Path.GetExtension(s) != "";
+
     }
 }

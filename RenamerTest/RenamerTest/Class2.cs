@@ -86,25 +86,24 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
             int lastStarPatt = -1, lastStarFile = -1;
             bool anyNumericDiff = false;
             bool anyOtherDiff = false;
-
             // Helper: try to match a single concrete pattern token (not '*') against a file token
-            bool MatchToken((string v, string t) F, (string v, string t) P)
+            // Returns: true if this token matches (including numeric diff), false if definite mismatch.
+            // Sets numericDiff=true if it's a numeric token with different value (allowed).
+            bool MatchToken((string v, string t) F, (string v, string t) P, out bool numericDiff)
             {
-                if (P.t == "any") return true; // handled outside
-                if (F.t != P.t) { anyOtherDiff = true; return false; }
+                numericDiff = false;
+                if (P.t == "any") return true; // handled outside, but keep it harmless
+                if (F.t != P.t) return false;
+
                 if (F.v == P.v) return true;
 
                 if (P.t == "num")
                 {
-                    // value differs but both numeric → numeric-only diff
-                    anyNumericDiff = true;
-                    return true; // treat as acceptable difference
+                    numericDiff = true; // value differs but both numeric → allowed difference
+                    return true;
                 }
-                else
-                {
-                    anyOtherDiff = true;
-                    return false;
-                }
+
+                return false; // same type but non-numeric different → real mismatch
             }
 
             // Walk through tokens
@@ -118,22 +117,23 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                     continue;
                 }
 
-                if (iPatt < pattTok.Count && MatchToken(fileTok[iFile], pattTok[iPatt]))
+                bool numericDiffThis = false;
+                if (iPatt < pattTok.Count && MatchToken(fileTok[iFile], pattTok[iPatt], out numericDiffThis))
                 {
-                    // matched this concrete token (types equal; values equal or numeric-diff accepted)
+                    anyNumericDiff |= numericDiffThis;
                     iFile++; iPatt++;
                     continue;
                 }
 
                 if (lastStarPatt != -1)
                 {
-                    // Backtrack: let the last '*' absorb one more file token
+                    // Let the last '*' absorb one more file token; DO NOT mark as mismatch
                     iPatt = lastStarPatt + 1;
                     iFile = ++lastStarFile;
                     continue;
                 }
 
-                // No match and no star to backtrack → concrete mismatch (Other)
+                // No match and no star to backtrack → definitive non-numeric mismatch
                 anyOtherDiff = true;
                 break;
             }
@@ -141,9 +141,8 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
             // Consume trailing '*' in pattern
             while (iPatt < pattTok.Count && pattTok[iPatt].Type == "any") iPatt++;
 
-            // If pattern still has unmatched concrete tokens → mismatch (Other)
-            if (iPatt < pattTok.Count)
-                anyOtherDiff = true;
+            // If pattern still has unmatched concrete tokens → real mismatch
+            if (iPatt < pattTok.Count) anyOtherDiff = true;
 
             // Build code
             int code = anyOtherDiff ? 2 : (anyNumericDiff ? 1 : 0);
@@ -167,8 +166,8 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
             return (code, suggestedBase, log.ToArray());
         }
         // Tokenize a PATTERN (prefix) where '*' is a wildcard token named "any".
-        // Digits are split like ParseFilename but we DO NOT create "0 vor Nummer" here;
-        // we return numbers as a single "num" token ("09", "10", etc.) to keep matching simple.
+        // Numbers are single "num" tokens. Extension-like chunks (e.g., ".png")
+        // are tagged as "format" so they match the file-side "format" tokens.
         private static List<(string Value, string Type)> TokenizePattern(string pattern)
         {
             var tokens = new List<(string, string)>();
@@ -196,16 +195,25 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                     continue;
                 }
 
-                // collect non-digit, non-asterisk text as one "str" token
+                // collect non-digit, non-asterisk text as one token
                 int tStart = i;
                 while (i < pattern.Length && pattern[i] != '*' && !char.IsDigit(pattern[i])) i++;
                 string text = pattern.Substring(tStart, i - tStart);
                 if (text.Length > 0)
-                    tokens.Add((text, "str"));
+                {
+                    // If token looks like a single extension (e.g., ".png", ".jpeg"),
+                    // tag it as "format" so it matches the file-side "format" token.
+                    bool looksLikeExt = text.Length > 1
+                                     && text[0] == '.'
+                                     && text.Skip(1).All(ch => char.IsLetterOrDigit(ch));
+
+                    tokens.Add((text, looksLikeExt ? "format" : "str"));
+                }
             }
 
             return tokens;
         }
+
         // Pattern-aware replacer:
         // - prefix pattern may contain tokens: "str", "num", and "*" (wildcard -> "any")
         // - replacement pattern may also contain "str", "num", and "*" (in same order semantics)
@@ -232,23 +240,44 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
 
             foreach (var t in preTok)
             {
-                if (t.Type == "str")
+                switch (t.Type)
                 {
-                    rgx.Append(Regex.Escape(t.Value));
+                    case "str":
+                    case "format":           // <-- keep this
+                        rgx.Append(Regex.Escape(t.Value));
+                        break;
+                    case "num":
+                        rgx.Append("(\\d+)");
+                        numGroupIdx.Add(groupCounter++);
+                        break;
+                    case "any":
+                        rgx.Append("(.*)");
+                        starGroupIdx.Add(groupCounter++);
+                        break;
                 }
-                else if (t.Type == "num")
-                {
-                    rgx.Append("(\\d+)");
-                    numGroupIdx.Add(groupCounter++);
-                }
-                else if (t.Type == "any")
-                {
-                    rgx.Append("(.*)");
-                    starGroupIdx.Add(groupCounter++);
-                }
+
             }
 
+
             var m = Regex.Match(baseName, rgx.ToString());
+            // FAST-PATH: pure extension change  "*.ext" -> "*.newext"
+            bool isPureExtChange =
+                preTok.Count == 2 && preTok[0].Type == "any" && preTok[1].Type == "format" &&
+                repTok.Count == 2 && repTok[0].Type == "any" && repTok[1].Type == "format";
+
+            if (isPureExtChange)
+            {
+                // take the capture from the star (file name without extension)
+                string stem = (m.Groups.Count > 1 ? m.Groups[1].Value : null) ?? string.Empty;
+
+                // Fallback if something odd was captured
+                if (string.IsNullOrEmpty(stem))
+                    stem = Path.GetFileNameWithoutExtension(baseName);
+
+                string resultName = stem + repTok[1].Value; // append new extension (e.g., ".jpg")
+                log?.Add($"Ext switch: '{baseName}' ⇒ '{resultName}'");
+                return resultName;
+            }
             if (!m.Success)
             {
                 log?.Add("Pattern Replace: Präfix-Muster passt nicht am Anfang – keine Änderung.");
@@ -288,38 +317,46 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
 
             foreach (var t in repTok)
             {
-                if (t.Type == "str")
+                switch (t.Type)
                 {
-                    newHead.Append(t.Value);
-                }
-                else if (t.Type == "any")
-                {
-                    // inject next star capture from prefix
-                    string cap = usedStars < starGroupIdx.Count ? m.Groups[starGroupIdx[usedStars++]].Value : "";
-                    newHead.Append(cap);
-                }
-                else if (t.Type == "num")
-                {
-                    int repDigits = t.Value?.Length ?? 0;
+                    case "str":
+                        newHead.Append(t.Value);
+                        break;
 
-                    if (!forceLiteralNumbers && delta.HasValue && capturedNumStr != null && long.TryParse(capturedNumStr, out var capNum))
-                    {
-                        // shift captured number by Δ and pad
-                        long newNum = capNum + delta.Value;
-                        int pad = repDigits > 0 ? repDigits : capturedNumDigits;
-                        if (pad < capturedNumDigits) pad = capturedNumDigits;
-                        string newNumStr = (newNum >= 0 && pad > 1)
-                            ? newNum.ToString(new string('0', pad))
-                            : newNum.ToString();
-                        newHead.Append(newNumStr);
-                    }
-                    else
-                    {
-                        // use the replacement literal number (e.g., "1")
-                        newHead.Append(t.Value ?? "");
-                    }
+                    case "any":
+                        {
+                            string cap = usedStars < starGroupIdx.Count ? m.Groups[starGroupIdx[usedStars++]].Value : "";
+                            newHead.Append(cap);
+                            break;
+                        }
+
+                    case "num":
+                        {
+                            int repDigits = t.Value?.Length ?? 0;
+                            bool repHasLeadingZero = repDigits > 0 && t.Value![0] == '0';
+
+                            if (!forceLiteralNumbers && delta.HasValue && capturedNumStr != null && long.TryParse(capturedNumStr, out var capNum))
+                            {
+                                long newNum = capNum + delta.Value;
+                                int pad = repHasLeadingZero ? repDigits : capturedNumDigits;
+                                string newNumStr = (newNum >= 0 && pad > 1)
+                                    ? newNum.ToString(new string('0', pad))
+                                    : newNum.ToString();
+                                newHead.Append(newNumStr);
+                            }
+                            else
+                            {
+                                newHead.Append(t.Value ?? "");
+                            }
+                            break;
+                        }
+
+                    case "format":                 // <-- ADD THIS
+                        newHead.Append(t.Value);   // append the new extension (e.g., ".jpg")
+                        break;
                 }
             }
+
 
             // Replace the matched head with the new head + keep or drop the tail
             string head = m.Value;
@@ -342,17 +379,16 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 string v = parsed[i, 0];
                 string t = parsed[i, 1];
 
+                // Keep "format" as "format" so it matches pattern's "format"
                 if (t == "0 vor Nummer")
                 {
-                    // collect all leading zeros
                     var zeros = new System.Text.StringBuilder();
                     while (i < n && parsed[i, 1] == "0 vor Nummer")
                     {
-                        zeros.Append(parsed[i, 0]); // typically "0"
+                        zeros.Append(parsed[i, 0]);
                         i++;
                     }
 
-                    // if followed by a numeric token, merge → one "num" token like "0009"
                     if (i < n && parsed[i, 1] == "num")
                     {
                         string num = parsed[i, 0];
@@ -361,18 +397,35 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                         continue;
                     }
 
-                    // otherwise keep zeros as-is (rare), but still one token
-                    list.Add((zeros.ToString(), "str")); // treat as plain text to be conservative
+                    list.Add((zeros.ToString(), "str"));
                     continue;
                 }
 
-                // normal token
-                list.Add((v, t));
+                // normal token (including "str", "num", and "format")
+                if (t == "str")
+                {
+                    // Split on common separators so pattern tokens like "-" may align
+                    // without requiring an exact whole-token match.
+                    var pieces = Regex.Split(v, "([\\-_ ])"); // keep separators as tokens
+                    foreach (var piece in pieces)
+                    {
+                        if (string.IsNullOrEmpty(piece)) continue;
+                        list.Add((piece, "str"));
+                    }
+                }
+                else
+                {
+                    list.Add((v, t));
+                }
                 i++;
+
             }
 
             return list;
         }
+
+
+
 
         // ---- Delta-aware replacer (keeps padding) ---------------------------------
         private static string DeltaAwareReplace(string baseName, string prefix, string prefixReplacement, List<string> log)
