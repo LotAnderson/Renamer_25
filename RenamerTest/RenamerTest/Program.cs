@@ -88,8 +88,16 @@ namespace RenamerTest
                 string ext = Path.GetExtension(file);
                 string baseName = Path.GetFileNameWithoutExtension(file);
 
+                // NEW: ask Find_difference to classify + produce suggested base name
                 var (code, suggestedBase, diffLog) = FilenameParser.Find_difference(baseName, prefix, prefixReplacement);
-                if (code == 2) continue; // block non-numeric changes
+
+                // Optional debug:
+                // foreach (var l in diffLog) Console.WriteLine(l);
+
+                // Skip only if code == 2 (non-numeric/structural diff outside allowed pattern)
+                if (code == 2)
+                    continue;
+
                 string targetPath = Path.Combine(directoryPath, suggestedBase + ext);
 
                 if (!string.Equals(file, targetPath, StringComparison.OrdinalIgnoreCase))
@@ -112,9 +120,11 @@ namespace RenamerTest
             {
                 int renamed = 0, skipped = 0, failed = 0;
 
-                foreach (var (oldPath, newPath) in planned)
+                // Phase 1: move everything to unique temp names
+                var temps = new List<(string tempPath, string finalPath)>(planned.Count);
+                try
                 {
-                    try
+                    foreach (var (oldPath, newPath) in planned)
                     {
                         if (string.Equals(oldPath, newPath, StringComparison.OrdinalIgnoreCase))
                         {
@@ -122,22 +132,48 @@ namespace RenamerTest
                             continue;
                         }
 
-                        if (File.Exists(newPath))
+                        // unique temp beside original file
+                        var tempPath = oldPath + ".renaming_" + Guid.NewGuid().ToString("N");
+                        File.Move(oldPath, tempPath);
+                        temps.Add((tempPath, newPath));
+                    }
+
+                    // Phase 2: move temps to their final names
+                    foreach (var (tempPath, finalPath) in temps)
+                    {
+                        // If a non-participating file blocks the final name, skip (or delete to overwrite)
+                        if (File.Exists(finalPath))
                         {
-                            Console.WriteLine($"Übersprungen (Ziel existiert bereits): {Path.GetFileName(oldPath)}");
+                            Console.WriteLine($"Übersprungen (Ziel existiert): {Path.GetFileName(finalPath)}");
+                            // Roll back this one temp -> original name next line:
+                            var origPath = tempPath.Substring(0, tempPath.IndexOf(".renaming_", StringComparison.Ordinal));
+                            File.Move(tempPath, origPath);
                             skipped++;
                             continue;
                         }
 
-                        File.Move(oldPath, newPath);
-                        Console.WriteLine($"Umbenannt: {Path.GetFileName(oldPath)} -> {Path.GetFileName(newPath)}");
+                        File.Move(tempPath, finalPath);
+                        Console.WriteLine($"Umbenannt: {Path.GetFileName(finalPath)}");
                         renamed++;
                     }
-                    catch (Exception ex)
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Fehler: {ex.Message}. Versuche Rückgängig zu machen…");
+                    // best-effort rollback: move any temps back
+                    foreach (var (tempPath, _) in temps)
                     {
-                        Console.WriteLine($"Fehler bei {Path.GetFileName(oldPath)}: {ex.Message}");
-                        failed++;
+                        try
+                        {
+                            if (File.Exists(tempPath))
+                            {
+                                var origPath = tempPath.Substring(0, tempPath.IndexOf(".renaming_", StringComparison.Ordinal));
+                                File.Move(tempPath, origPath);
+                            }
+                        }
+                        catch { /* swallow */ }
                     }
+                    failed++;
                 }
 
                 Console.WriteLine();
@@ -247,16 +283,18 @@ namespace RenamerTest
         {
             while (true)
             {
-                var ans = ReadInput(prompt);
+                string? ans = ReadInput(prompt);  // <- changed
                 if (ans == "__reset__") continue;
-                ans = ans.Trim().ToLowerInvariant();
+
+                ans = ans?.Trim().ToLowerInvariant();
                 if (ans == "j" || ans == "ja" || ans == "y" || ans == "yes") return true;
                 if (ans == "n" || ans == "nein" || ans == "no") return false;
+
                 Console.WriteLine("Bitte 'j' oder 'n' eingeben (oder 'reset'/'stop').");
             }
         }
 
-        private static (bool restart, string pattern, string replacement) PromptFindReplace(string label)
+        private static (bool restart, string? pattern, string? replacement) PromptFindReplace(string label)
         {
             string pattern = ReadInputRaw($"{label} zum Entfernen/Ändern (leer lassen = kein {label}): ");
             if (pattern == "__reset__") return (true, null, null);
