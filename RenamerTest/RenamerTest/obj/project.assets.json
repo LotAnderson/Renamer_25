@@ -14,9 +14,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
-      "projectName": "RenamerTest",
-      "projectPath": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\RenamerTest.csproj",
+      "projectUniqueName": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\Renamer.csproj",
+      "projectName": "Renamer",
+      "projectPath": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\Renamer.csproj",
       "packagesPath": "C:\\Users\\edhar\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\obj\\",
       "projectStyle": "PackageReference",

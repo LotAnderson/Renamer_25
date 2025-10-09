@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace RenamerTest
+namespace Rennamer
 {
     internal static class PathSafety
     {
