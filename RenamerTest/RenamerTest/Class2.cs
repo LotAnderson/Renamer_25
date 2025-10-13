@@ -248,7 +248,7 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
             var preTok = TokenizePattern(prefixPattern);
             var repTok = TokenizePattern(replacementPattern);
 
-            // Implicit leading '*' if pattern starts with number and no format
+            // Implizites führendes '*' falls Pattern mit Zahl startet und keine Extension enthält
             bool preMentionsFormat = preTok.Any(t => t.Type == "format");
             bool preStartsWithNumber = preTok.Count > 0 && preTok[0].Type == "num";
             if (!preMentionsFormat && preStartsWithNumber)
@@ -256,7 +256,7 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 preTok.Insert(0, ("*", "any"));
             }
 
-            // Keep context in replacement if user didn't put a '*'
+            // Kontext behalten, wenn im Replacement kein '*' steht
             bool preHasLeadingAny = preTok.Count > 0 && preTok[0].Type == "any";
             bool repHasAny = repTok.Any(t => t.Type == "any");
             if (preHasLeadingAny && !repHasAny)
@@ -264,7 +264,7 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 repTok.Insert(0, ("*", "any"));
             }
 
-            // Build regex from prefix pattern
+            // Regex für Matching aufbauen
             var rgx = new StringBuilder("^");
             var starGroupIdx = new List<int>();
             var numGroupIdx = new List<int>();
@@ -299,12 +299,12 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 }
             }
 
-            // Anchor to end when the prefix pattern includes a format (extension)
+            // Wenn Format enthalten ist → Ende verankern
             bool strictFull = preTok.Any(t => t.Type == "format");
             string pattern = rgx.ToString() + (strictFull ? "$" : "");
             var m = Regex.Match(baseName, pattern);
 
-            // FAST-PATH: pure extension change  "*.ext" -> "*.newext"
+            // FAST-PATH: nur Extension ändern
             bool isPureExtChange =
                 preTok.Count == 2 && preTok[0].Type == "any" && preTok[1].Type == "format" &&
                 repTok.Count == 2 && repTok[0].Type == "any" && repTok[1].Type == "format";
@@ -325,43 +325,42 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 return baseName;
             }
 
-            // Detect star/format in replacement & tail policy
+            // Detect star/format in replacement & Tail-Policy
             var repHasStar = repTok.Any(t => t.Type == "any");
             var repHasFormat = repTok.Any(t => t.Type == "format");
 
-            // Keep the tail by default. Only drop it if replacement sets a new extension without '*'
             bool dropTail = repHasFormat && !repHasStar;
             bool forceLiteralNumbers = dropTail;
 
-            // Compute Δ from first numeric tokens in patterns (if present)
+            // ✅ Δ von der **letzten Zahl** berechnen
             long? delta = null;
-            int preFirstNumIndex = preTok.FindIndex(t => t.Type == "num");
-            int repFirstNumIndex = repTok.FindIndex(t => t.Type == "num");
-            if (preFirstNumIndex >= 0 && repFirstNumIndex >= 0)
+            int preLastNumIndex = preTok.FindLastIndex(t => t.Type == "num");
+            int repLastNumIndex = repTok.FindLastIndex(t => t.Type == "num");
+            if (preLastNumIndex >= 0 && repLastNumIndex >= 0)
             {
-                if (long.TryParse(preTok[preFirstNumIndex].Value, out var preNum) &&
-                    long.TryParse(repTok[repFirstNumIndex].Value, out var repNum))
+                if (long.TryParse(preTok[preLastNumIndex].Value, out var preNum) &&
+                    long.TryParse(repTok[repLastNumIndex].Value, out var repNum))
                 {
                     delta = repNum - preNum;
                 }
             }
 
-            // Grab first captured number if there was one
+            // ✅ Letzte Zahl aus Capture nehmen
             string? capturedNumStr = null;
             int capturedNumDigits = 0;
             if (numGroupIdx.Count > 0)
             {
-                capturedNumStr = m.Groups[numGroupIdx[0]].Value;
+                capturedNumStr = m.Groups[numGroupIdx.Last()].Value;
                 capturedNumDigits = capturedNumStr.Length;
             }
 
-            // Threshold guard: only rename if captured number >= pattern number
+            // Threshold-Check (optional)
             bool prefixStartsWithNumber = preTok.Count > 0 && preTok[0].Type == "num";
-            bool prefixMentionsFormat = preTok.Any(t => t.Type == "format");
-            if (!prefixMentionsFormat && prefixStartsWithNumber && preFirstNumIndex >= 0 && capturedNumStr != null)
+            bool prefixMentionsFormat2 = preTok.Any(t => t.Type == "format");
+            if (!prefixMentionsFormat2 && prefixStartsWithNumber && preLastNumIndex >= 0 && capturedNumStr != null)
             {
                 if (long.TryParse(capturedNumStr, out var capNum) &&
-                    long.TryParse(preTok[preFirstNumIndex].Value, out var patNum))
+                    long.TryParse(preTok[preLastNumIndex].Value, out var patNum))
                 {
                     if (capNum < patNum)
                     {
@@ -371,7 +370,7 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 }
             }
 
-            // Build new head from the replacement pattern
+            // Neues Ergebnis zusammenbauen
             var newHead = new StringBuilder();
             int usedStars = 0;
 
@@ -412,12 +411,12 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                         }
 
                     case "format":
-                        newHead.Append(t.Value); // new extension (e.g., ".jpg")
+                        newHead.Append(t.Value);
                         break;
                 }
             }
 
-            // Replace matched head with new head + keep or drop the tail
+            // Head ersetzen + Tail ggf. behalten
             string head = m.Value;
             string tail = baseName.Substring(head.Length);
             string newName = dropTail ? newHead.ToString() : (newHead.ToString() + tail);
@@ -426,6 +425,7 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                      (dropTail ? " (Tail removed, literal numbers applied)" : ""));
             return newName;
         }
+
 
         private static List<(string Value, string Type)> NormalizeTokens(string[,] parsed)
         {

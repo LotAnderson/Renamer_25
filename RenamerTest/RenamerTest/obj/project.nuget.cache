@@ -1,8 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "FtIAABsfkzg=",
+  "dgSpecHash": "HPG5xY73xiI=",
   "success": true,
-  "projectFilePath": "C:\\Users\\edhar\\source\\repos\\LotAnderson\\Renamer_25\\RenamerTest\\RenamerTest\\Renamer.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "C:\\Users\\Microsoft\\source\\repos\\Renamer_25\\RenamerTest\\RenamerTest\\Renamer.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Microsoft\\.nuget\\packages\\microsoft.net.sdk.compilers.toolset\\9.0.302\\microsoft.net.sdk.compilers.toolset.9.0.302.nupkg.sha512",
+    "C:\\Users\\Microsoft\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.18\\microsoft.windowsdesktop.app.ref.8.0.18.nupkg.sha512",
+    "C:\\Users\\Microsoft\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.18\\microsoft.netcore.app.ref.8.0.18.nupkg.sha512",
+    "C:\\Users\\Microsoft\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.18\\microsoft.aspnetcore.app.ref.8.0.18.nupkg.sha512",
+    "C:\\Users\\Microsoft\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.18\\microsoft.netcore.app.host.win-x64.8.0.18.nupkg.sha512"
+  ],
   "logs": []
 }
