@@ -82,10 +82,33 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 pattTok.Insert(0, ("*", "any"));
             }
 
-            // ✅ Fast path: plain string prefix (no '*', no extension) acts as "StartsWith"
+            // ✅ Default behavior: substring match instead of only prefix
             bool pattHasStar = pattTok.Any(t => t.Type == "any");
             bool pattHasFormat = pattTok.Any(t => t.Type == "format");
-            if (!string.IsNullOrEmpty(prefix) && !pattHasStar && !pattHasFormat)
+            bool strictMode = Environment.GetCommandLineArgs()
+                .Any(a => a.Equals("--strict", StringComparison.OrdinalIgnoreCase));
+
+            // If user did not specify '*' and did not enable strict mode → add '*' to both ends of PREFIX
+            if (!string.IsNullOrEmpty(prefix) && !pattHasStar && !pattHasFormat && !strictMode)
+            {
+                prefix = "*" + prefix + "*";
+                pattTok = TokenizePattern(prefix);
+                // 🔁 Recompute flags after retokenizing
+                pattHasStar = pattTok.Any(t => t.Type == "any");
+                pattHasFormat = pattTok.Any(t => t.Type == "format");
+            }
+
+            // 🔧 Make the REPLACEMENT context-preserving by default
+            // If replacement has no '*' and no format and not strict → wrap with '*' on both sides
+            bool replHasStar = !string.IsNullOrEmpty(prefixReplacement) && prefixReplacement.Contains('*');
+            bool replHasFormat = !string.IsNullOrEmpty(prefixReplacement) && prefixReplacement.Contains('.');
+            if (!string.IsNullOrEmpty(prefixReplacement) && !replHasStar && !replHasFormat && !strictMode)
+            {
+                prefixReplacement = "*" + prefixReplacement + "*";
+            }
+
+            // If strict mode is enabled or pattern contains a format (and no stars) → old StartsWith behavior
+            if (!string.IsNullOrEmpty(prefix) && !pattHasStar && (pattHasFormat || strictMode))
             {
                 if (fileBaseName.StartsWith(prefix, StringComparison.Ordinal))
                 {
@@ -93,6 +116,7 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                     return (0, suggested, log.ToArray());
                 }
             }
+
 
             if (pattTok.Count == 0)
             {
@@ -116,6 +140,7 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
                 if (P.t == "num") { numericDiff = true; return true; }
                 return false;
             }
+
 
             while (iFile < fileTok.Count)
             {
@@ -251,16 +276,23 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
             // Implizites führendes '*' falls Pattern mit Zahl startet und keine Extension enthält
             bool preMentionsFormat = preTok.Any(t => t.Type == "format");
             bool preStartsWithNumber = preTok.Count > 0 && preTok[0].Type == "num";
-            if (!preMentionsFormat && preStartsWithNumber)
+
+            // Remember whether we're about to add an implicit leading star
+            bool hasImplicitLeadingAny = !preMentionsFormat && preStartsWithNumber;
+
+            if (hasImplicitLeadingAny)
             {
+                // Add implicit star to the prefix pattern
                 preTok.Insert(0, ("*", "any"));
             }
 
-            // Kontext behalten, wenn im Replacement kein '*' steht
+
+
             bool preHasLeadingAny = preTok.Count > 0 && preTok[0].Type == "any";
-            bool repHasAny = repTok.Any(t => t.Type == "any");
-            if (preHasLeadingAny && !repHasAny)
+            if (hasImplicitLeadingAny)
             {
+                // Unconditionally insert a leading '*' token in the replacement,
+                // even if it already contains other '*' — this aligns capture indices.
                 repTok.Insert(0, ("*", "any"));
             }
 
@@ -329,8 +361,11 @@ public static string[,] ParseFilename(string filename, bool view_changes = false
             var repHasStar = repTok.Any(t => t.Type == "any");
             var repHasFormat = repTok.Any(t => t.Type == "format");
 
-            bool dropTail = repHasFormat && !repHasStar;
+            // Only drop tail if replacement explicitly ends with a format (e.g., '.png')
+            // and does NOT contain any wildcard
+            bool dropTail = repHasFormat && !repHasStar && replacementPattern.Trim().EndsWith(".");
             bool forceLiteralNumbers = dropTail;
+
 
             // ✅ Δ von der **letzten Zahl** berechnen
             long? delta = null;
